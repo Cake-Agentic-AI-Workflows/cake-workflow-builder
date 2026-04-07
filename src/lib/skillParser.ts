@@ -19,7 +19,7 @@ interface ParseResult {
 /**
  * Parse YAML frontmatter from SKILL.md
  */
-function parseFrontmatter(content: string): { metadata: Partial<WorkflowMetadata>; body: string } {
+export function parseFrontmatter(content: string): { metadata: Partial<WorkflowMetadata>; body: string } {
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
 
   if (!frontmatterMatch) {

@@ -2,6 +2,7 @@
 
 import { Cog, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SkillTemplates } from './SkillTemplates';
 
 interface DraggableNodeProps {
   type: 'phase' | 'approval';
@@ -33,7 +34,7 @@ function DraggableNode({ type, label, icon, color }: DraggableNodeProps) {
 
 export function NodePalette() {
   return (
-    <div className="w-56 p-4 border-r bg-card">
+    <div className="w-56 p-4 border-r bg-card flex flex-col">
       <h3 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wider">
         Nodes
       </h3>
@@ -58,6 +59,14 @@ export function NodePalette() {
         <p>
           Connect nodes by dragging from one handle to another.
         </p>
+      </div>
+
+      {/* Skill Templates Section */}
+      <div className="mt-6 pt-6 border-t flex-1 overflow-auto">
+        <h3 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wider">
+          Templates
+        </h3>
+        <SkillTemplates />
       </div>
     </div>
   );
