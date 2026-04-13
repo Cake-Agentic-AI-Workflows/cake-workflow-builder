@@ -227,7 +227,7 @@ function WorkflowCanvasInner({ onClearClick }: { onClearClick: () => void }) {
         <Panel position="top-left" className="text-xs text-muted-foreground">
           Drag nodes from sidebar • Click to select • Delete key to remove
         </Panel>
-        <Panel position="bottom-left">
+        <Panel position="top-right">
           <ClearButton onClick={onClearClick} />
         </Panel>
       </ReactFlow>
