@@ -22,6 +22,7 @@ import { EndNode } from './CustomNodes/EndNode';
 import { PhaseNode } from './CustomNodes/PhaseNode';
 import { ApprovalNode } from './CustomNodes/ApprovalNode';
 import { DecisionNode } from './CustomNodes/DecisionNode';
+import { ClearButton } from './ClearButton';
 import { EditableEdge } from './CustomEdges';
 
 const nodeTypes = {
@@ -36,7 +37,7 @@ const edgeTypes = {
   default: EditableEdge,
 };
 
-function WorkflowCanvasInner() {
+function WorkflowCanvasInner({ onClearClick }: { onClearClick: () => void }) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const edgeReconnectSuccessful = useRef(true);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -226,6 +227,9 @@ function WorkflowCanvasInner() {
         <Panel position="top-left" className="text-xs text-muted-foreground">
           Drag nodes from sidebar • Click to select • Delete key to remove
         </Panel>
+        <Panel position="top-right">
+          <ClearButton onClick={onClearClick} />
+        </Panel>
       </ReactFlow>
 
       {/* Drop zone overlay - appears when dragging */}
@@ -242,10 +246,14 @@ function WorkflowCanvasInner() {
   );
 }
 
-export function WorkflowCanvas() {
+interface WorkflowCanvasProps {
+  onClearClick: () => void;
+}
+
+export function WorkflowCanvas({ onClearClick }: WorkflowCanvasProps) {
   return (
     <ReactFlowProvider>
-      <WorkflowCanvasInner />
+      <WorkflowCanvasInner onClearClick={onClearClick} />
     </ReactFlowProvider>
   );
 }
