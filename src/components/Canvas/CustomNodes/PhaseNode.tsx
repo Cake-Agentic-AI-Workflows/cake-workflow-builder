@@ -31,10 +31,45 @@ function PhaseNodeComponent({ data, selected }: NodeProps<PhaseNodeType>) {
         selected && 'ring-2 ring-primary ring-offset-2'
       )}
     >
+      {/* Top handle - input */}
       <Handle
         type="target"
         position={Position.Top}
-        className="w-3 h-3 !bg-gray-500"
+        id="top"
+        className="w-3 h-3 !bg-gray-500 hover:!bg-primary hover:scale-150 transition-transform"
+      />
+      {/* Bottom handle - output */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        className="w-3 h-3 !bg-gray-500 hover:!bg-primary hover:scale-150 transition-transform"
+      />
+      {/* Left handle - bidirectional (stacked source + target at same position) */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left"
+        className="w-3 h-3 !bg-gray-500 hover:!bg-primary hover:scale-150 transition-transform"
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="left"
+        className="w-3 h-3 !bg-gray-500 hover:!bg-primary hover:scale-150 transition-transform"
+      />
+      {/* Right handle - bidirectional (stacked source + target at same position) */}
+      <Handle
+        type="target"
+        position={Position.Right}
+        id="right"
+        className="w-3 h-3 !bg-gray-500 hover:!bg-primary hover:scale-150 transition-transform"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        className="w-3 h-3 !bg-gray-500 hover:!bg-primary hover:scale-150 transition-transform"
       />
 
       <div className="p-3">
@@ -64,12 +99,6 @@ function PhaseNodeComponent({ data, selected }: NodeProps<PhaseNodeType>) {
           )}
         </div>
       </div>
-
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-3 h-3 !bg-gray-500"
-      />
     </div>
   );
 }

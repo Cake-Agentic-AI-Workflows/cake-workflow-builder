@@ -1,20 +1,32 @@
 'use client';
 
 import { useWorkflowStore } from '@/store/workflowStore';
-import { PhaseNodeData, ApprovalNodeData } from '@/types/workflow';
+import { PhaseNodeData, ApprovalNodeData, DecisionNodeData } from '@/types/workflow';
 import { PhaseConfig } from './PhaseConfig';
 import { ApprovalConfig } from './ApprovalConfig';
+import { DecisionConfig } from './DecisionConfig';
+import { EdgeConfig } from './EdgeConfig';
 
 export function ConfigPanel() {
-  const { nodes, selectedNodeId } = useWorkflowStore();
+  const { nodes, edges, selectedNodeId, selectedEdgeId } = useWorkflowStore();
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+  const selectedEdge = edges.find((e) => e.id === selectedEdgeId);
+
+  // Edge selected
+  if (selectedEdge) {
+    return (
+      <div className="w-80 border-l bg-card overflow-y-auto">
+        <EdgeConfig edgeId={selectedEdge.id} edge={selectedEdge} />
+      </div>
+    );
+  }
 
   if (!selectedNode) {
     return (
       <div className="w-80 p-4 border-l bg-card">
         <div className="h-full flex items-center justify-center text-muted-foreground text-sm text-center">
-          <p>Select a node to configure it</p>
+          <p>Select a node or edge to configure it</p>
         </div>
       </div>
     );
@@ -42,6 +54,12 @@ export function ConfigPanel() {
         <ApprovalConfig
           nodeId={selectedNode.id}
           data={selectedNode.data as ApprovalNodeData}
+        />
+      )}
+      {selectedNode.type === 'decision' && (
+        <DecisionConfig
+          nodeId={selectedNode.id}
+          data={selectedNode.data as DecisionNodeData}
         />
       )}
     </div>

@@ -1,24 +1,25 @@
 // SKILL.md generator - converts visual workflow to markdown
 
-import { Edge } from '@xyflow/react';
-import { WorkflowNode } from '@/store/workflowStore';
+import { WorkflowNode, WorkflowEdge } from '@/store/workflowStore';
 import {
   WorkflowMetadata,
   PhaseNodeData,
   ApprovalNodeData,
+  DecisionNodeData,
 } from '@/types/workflow';
+import { findLoopEdges } from './graphUtils';
 
 interface GeneratorInput {
   nodes: WorkflowNode[];
-  edges: Edge[];
+  edges: WorkflowEdge[];
   metadata: WorkflowMetadata;
 }
 
 /**
  * Topologically sort nodes based on edges
- * Returns nodes in execution order
+ * Returns nodes in execution order (ignores loop-back edges to avoid cycles)
  */
-function topologicalSort(nodes: WorkflowNode[], edges: Edge[]): WorkflowNode[] {
+function topologicalSort(nodes: WorkflowNode[], edges: WorkflowEdge[], loopEdgeIds: Set<string>): WorkflowNode[] {
   const adjacency = new Map<string, string[]>();
   const inDegree = new Map<string, number>();
 
@@ -28,10 +29,12 @@ function topologicalSort(nodes: WorkflowNode[], edges: Edge[]): WorkflowNode[] {
     inDegree.set(node.id, 0);
   });
 
-  // Build graph
+  // Build graph - skip loop edges to avoid cycles
   edges.forEach((edge) => {
-    adjacency.get(edge.source)?.push(edge.target);
-    inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
+    if (!loopEdgeIds.has(edge.id)) {
+      adjacency.get(edge.source)?.push(edge.target);
+      inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
+    }
   });
 
   // Kahn's algorithm
@@ -41,11 +44,10 @@ function topologicalSort(nodes: WorkflowNode[], edges: Edge[]): WorkflowNode[] {
   });
 
   const sorted: WorkflowNode[] = [];
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
   while (queue.length > 0) {
     const nodeId = queue.shift()!;
-    const node = nodeMap.get(nodeId);
+    const node = nodes.find((n) => n.id === nodeId);
     if (node) sorted.push(node);
 
     adjacency.get(nodeId)?.forEach((targetId) => {
@@ -79,8 +81,14 @@ ${tagsYaml}
 
 /**
  * Generate a phase section from node data
+ * Includes any loop-back edge info
  */
-function generatePhaseSection(data: PhaseNodeData, phaseNum: number): string {
+function generatePhaseSection(
+  data: PhaseNodeData,
+  phaseNum: number,
+  loopBackEdge?: WorkflowEdge,
+  nodeMap?: Map<string, WorkflowNode>
+): string {
   const lines: string[] = [];
 
   lines.push(`### Phase ${phaseNum}: ${data.label}`);
@@ -88,6 +96,22 @@ function generatePhaseSection(data: PhaseNodeData, phaseNum: number): string {
 
   if (data.description) {
     lines.push(data.description);
+    lines.push('');
+  }
+
+  // Loop-back instruction
+  if (loopBackEdge) {
+    const targetNode = nodeMap?.get(loopBackEdge.target);
+    const targetLabel = targetNode?.data?.label || loopBackEdge.target;
+    const maxIterations = loopBackEdge.data?.maxIterations || 3;
+    const condition = loopBackEdge.data?.condition;
+
+    lines.push('**Loop Control:**');
+    if (condition) {
+      lines.push(`- Repeat back to "${targetLabel}" ${condition}, up to ${maxIterations} times`);
+    } else {
+      lines.push(`- May repeat back to "${targetLabel}", up to ${maxIterations} times maximum`);
+    }
     lines.push('');
   }
 
@@ -166,19 +190,63 @@ function generateApprovalSection(data: ApprovalNodeData): string {
 }
 
 /**
+ * Generate a decision block section
+ */
+function generateDecisionSection(
+  data: DecisionNodeData,
+  outgoingEdges: WorkflowEdge[],
+  nodeMap: Map<string, WorkflowNode>
+): string {
+  const lines: string[] = [];
+
+  lines.push(`### Decision: ${data.label}`);
+  lines.push('');
+  lines.push(`**${data.question}**`);
+  lines.push('');
+  lines.push('Based on the outcome, take one of the following paths:');
+  lines.push('');
+
+  data.branches.forEach((branch) => {
+    // Find the edge for this branch
+    const edge = outgoingEdges.find((e) => e.sourceHandle === branch.id);
+    const targetNode = edge ? nodeMap.get(edge.target) : null;
+    const targetLabel = targetNode?.data?.label || 'next step';
+
+    lines.push(`- **${branch.label}**: ${branch.condition || 'Default path'}`);
+    lines.push(`  - Go to: ${targetLabel}`);
+  });
+
+  return lines.join('\n');
+}
+
+/**
  * Main generator function
  * Converts workflow to SKILL.md string
  */
 export function generateSkillMd(input: GeneratorInput): string {
   const { nodes, edges, metadata } = input;
 
-  // Sort nodes topologically
-  const sortedNodes = topologicalSort(nodes, edges);
+  // Create node map for lookups
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+
+  // Find loop edges using graph-based cycle detection
+  const loopEdgeIds = findLoopEdges(nodes, edges);
+
+  // Sort nodes topologically (excluding loop edges)
+  const sortedNodes = topologicalSort(nodes, edges, loopEdgeIds);
 
   // Filter out start/end nodes for content generation
   const contentNodes = sortedNodes.filter(
     (n) => n.type !== 'start' && n.type !== 'end'
   );
+
+  // Build map of loop edges keyed by source node
+  const loopEdges = new Map<string, WorkflowEdge>();
+  edges.forEach((edge) => {
+    if (loopEdgeIds.has(edge.id)) {
+      loopEdges.set(edge.source, edge);
+    }
+  });
 
   // Count phases for numbering
   let phaseNum = 0;
@@ -187,9 +255,13 @@ export function generateSkillMd(input: GeneratorInput): string {
   const sections = contentNodes.map((node) => {
     if (node.type === 'phase') {
       phaseNum++;
-      return generatePhaseSection(node.data as PhaseNodeData, phaseNum);
+      const loopBack = loopEdges.get(node.id);
+      return generatePhaseSection(node.data as PhaseNodeData, phaseNum, loopBack, nodeMap);
     } else if (node.type === 'approval') {
       return generateApprovalSection(node.data as ApprovalNodeData);
+    } else if (node.type === 'decision') {
+      const outgoingEdges = edges.filter((e) => e.source === node.id);
+      return generateDecisionSection(node.data as DecisionNodeData, outgoingEdges, nodeMap);
     }
     return '';
   }).filter(Boolean);

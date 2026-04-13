@@ -15,38 +15,46 @@ import {
   PhaseNodeData,
   ApprovalNodeData,
   StartEndNodeData,
+  DecisionNodeData,
+  WorkflowEdgeData,
   defaultWorkflowMetadata,
   defaultPhaseNodeData,
   defaultApprovalNodeData,
+  defaultDecisionNodeData,
+  defaultEdgeData,
 } from '@/types/workflow';
 
 // Custom node types for React Flow
 export type PhaseNode = Node<PhaseNodeData, 'phase'>;
 export type ApprovalNode = Node<ApprovalNodeData, 'approval'>;
+export type DecisionNode = Node<DecisionNodeData, 'decision'>;
 export type StartNode = Node<StartEndNodeData, 'start'>;
 export type EndNode = Node<StartEndNodeData, 'end'>;
 
-export type WorkflowNode = PhaseNode | ApprovalNode | StartNode | EndNode;
+export type WorkflowNode = PhaseNode | ApprovalNode | DecisionNode | StartNode | EndNode;
+export type WorkflowEdge = Edge<WorkflowEdgeData>;
 
 interface WorkflowState {
-  // Workflow data
   nodes: WorkflowNode[];
-  edges: Edge[];
+  edges: WorkflowEdge[];
   metadata: WorkflowMetadata;
   selectedNodeId: string | null;
+  selectedEdgeId: string | null;
 
-  // Actions
   onNodesChange: OnNodesChange<WorkflowNode>;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
   setSelectedNodeId: (id: string | null) => void;
+  setSelectedEdgeId: (id: string | null) => void;
   updateNodeData: <T>(nodeId: string, data: Partial<T>) => void;
+  updateEdgeData: (edgeId: string, data: Partial<WorkflowEdgeData>) => void;
   updateMetadata: (metadata: Partial<WorkflowMetadata>) => void;
   addPhaseNode: (position: { x: number; y: number }) => string;
   addApprovalNode: (position: { x: number; y: number }) => string;
+  addDecisionNode: (position: { x: number; y: number }) => string;
   deleteNode: (nodeId: string) => void;
   resetWorkflow: () => void;
-  loadWorkflow: (nodes: WorkflowNode[], edges: Edge[], metadata: WorkflowMetadata) => void;
+  loadWorkflow: (nodes: WorkflowNode[], edges: WorkflowEdge[], metadata: WorkflowMetadata) => void;
 }
 
 // Initial nodes for a new workflow
@@ -67,7 +75,7 @@ const initialNodes: WorkflowNode[] = [
   },
 ];
 
-const initialEdges: Edge[] = [];
+const initialEdges: WorkflowEdge[] = [];
 
 let nodeIdCounter = 0;
 const generateNodeId = () => `node-${++nodeIdCounter}`;
@@ -77,6 +85,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   edges: initialEdges,
   metadata: { ...defaultWorkflowMetadata },
   selectedNodeId: null,
+  selectedEdgeId: null,
 
   onNodesChange: (changes) => {
     set({
@@ -86,7 +95,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   onEdgesChange: (changes) => {
     set({
-      edges: applyEdgeChanges(changes, get().edges),
+      edges: applyEdgeChanges(changes, get().edges) as WorkflowEdge[],
     });
   },
 
@@ -95,8 +104,14 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       edges: addEdge(
         {
           ...connection,
+          data: { ...defaultEdgeData },
           animated: true,
           style: { strokeWidth: 2 },
+          markerEnd: {
+            type: 'arrowclosed' as const,
+            width: 20,
+            height: 20,
+          },
         },
         get().edges
       ),
@@ -104,7 +119,11 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   },
 
   setSelectedNodeId: (id) => {
-    set({ selectedNodeId: id });
+    set({ selectedNodeId: id, selectedEdgeId: null });
+  },
+
+  setSelectedEdgeId: (id) => {
+    set({ selectedEdgeId: id, selectedNodeId: null });
   },
 
   updateNodeData: <T,>(nodeId: string, data: Partial<T>) => {
@@ -114,6 +133,16 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
           ? { ...node, data: { ...node.data, ...data } }
           : node
       ) as WorkflowNode[],
+    });
+  },
+
+  updateEdgeData: (edgeId: string, data: Partial<WorkflowEdgeData>) => {
+    set({
+      edges: get().edges.map((edge) =>
+        edge.id === edgeId
+          ? { ...edge, data: { ...edge.data, ...data } }
+          : edge
+      ) as WorkflowEdge[],
     });
   },
 
@@ -153,12 +182,37 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     return id;
   },
 
+  addDecisionNode: (position) => {
+    const id = generateNodeId();
+    const newNode: DecisionNode = {
+      id,
+      type: 'decision',
+      position,
+      data: defaultDecisionNodeData(id),
+    };
+    set({
+      nodes: [...get().nodes, newNode],
+      selectedNodeId: id,
+    });
+    return id;
+  },
+
   deleteNode: (nodeId) => {
     if (nodeId === 'start' || nodeId === 'end') return;
+    const newNodes = get().nodes.filter((n) => n.id !== nodeId);
+    const newEdges = get().edges.filter((e) => e.source !== nodeId && e.target !== nodeId);
+
+    // Check if all content nodes are now deleted (only start/end remain)
+    const hasContentNodes = newNodes.some(
+      (n) => n.type !== 'start' && n.type !== 'end'
+    );
+
     set({
-      nodes: get().nodes.filter((n) => n.id !== nodeId),
-      edges: get().edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
+      nodes: newNodes,
+      edges: newEdges,
       selectedNodeId: get().selectedNodeId === nodeId ? null : get().selectedNodeId,
+      // Reset metadata to defaults if no content nodes remain
+      ...(hasContentNodes ? {} : { metadata: { ...defaultWorkflowMetadata } }),
     });
   },
 
@@ -169,6 +223,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       edges: initialEdges,
       metadata: { ...defaultWorkflowMetadata },
       selectedNodeId: null,
+      selectedEdgeId: null,
     });
   },
 
@@ -185,6 +240,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       edges,
       metadata,
       selectedNodeId: null,
+      selectedEdgeId: null,
     });
   },
 }));

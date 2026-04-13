@@ -1,11 +1,11 @@
 'use client';
 
-import { Cog, HelpCircle } from 'lucide-react';
+import { Cog, HelpCircle, GitBranch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SkillTemplates } from './SkillTemplates';
 
 interface DraggableNodeProps {
-  type: 'phase' | 'approval';
+  type: 'phase' | 'approval' | 'decision';
   label: string;
   icon: React.ReactNode;
   color: string;
@@ -50,6 +50,12 @@ export function NodePalette() {
           label="Approval Gate"
           icon={<HelpCircle className="w-4 h-4" />}
           color="border-yellow-300 bg-yellow-50 hover:border-yellow-400"
+        />
+        <DraggableNode
+          type="decision"
+          label="Decision"
+          icon={<GitBranch className="w-4 h-4" />}
+          color="border-amber-300 bg-amber-50 hover:border-amber-400"
         />
       </div>
       <div className="mt-6 text-xs text-muted-foreground">
