@@ -3,7 +3,7 @@
 export type AgentType = 'Explore' | 'Plan' | 'general-purpose' | 'none';
 export type ModelType = 'opus' | 'sonnet' | 'haiku';
 export type ExecutionMode = 'parallel' | 'sequential';
-export type NodeType = 'start' | 'phase' | 'approval' | 'end';
+export type NodeType = 'start' | 'phase' | 'approval' | 'decision' | 'end';
 
 export interface AgentConfig {
   type: AgentType;
@@ -54,6 +54,29 @@ export interface StartEndNodeData {
   label: string;
 }
 
+export interface DecisionBranch {
+  id: string;
+  label: string;
+  condition: string;
+}
+
+export interface DecisionNodeData {
+  [key: string]: unknown;
+  id: string;
+  label: string;
+  question: string;
+  branches: DecisionBranch[];
+}
+
+export interface WorkflowEdgeData {
+  [key: string]: unknown;
+  maxIterations?: number;
+  condition?: string;
+  offsetX?: number;
+  offsetY?: number;
+  isLoop?: boolean; // Computed: true if this edge creates a cycle in the graph
+}
+
 export interface WorkflowMetadata {
   name: string;
   description: string;
@@ -102,6 +125,18 @@ export const defaultApprovalNodeData = (id: string): ApprovalNodeData => ({
     { label: 'No', description: 'Stop the workflow' },
   ],
 });
+
+export const defaultDecisionNodeData = (id: string): DecisionNodeData => ({
+  id,
+  label: 'Decision',
+  question: 'What should happen next?',
+  branches: [
+    { id: 'branch-1', label: 'Option A', condition: 'when condition A is met' },
+    { id: 'branch-2', label: 'Option B', condition: 'when condition B is met' },
+  ],
+});
+
+export const defaultEdgeData: WorkflowEdgeData = {};
 
 export const defaultWorkflowMetadata: WorkflowMetadata = {
   name: 'my-workflow',

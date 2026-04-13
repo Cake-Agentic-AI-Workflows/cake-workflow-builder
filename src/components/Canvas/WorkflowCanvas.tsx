@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState, DragEvent } from 'react';
+import { useCallback, useRef, useState, useMemo, DragEvent } from 'react';
 import {
   ReactFlow,
   Background,
@@ -9,24 +9,36 @@ import {
   Panel,
   useReactFlow,
   ReactFlowProvider,
+  Edge,
+  reconnectEdge,
+  Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { useWorkflowStore, WorkflowNode } from '@/store/workflowStore';
+import { useWorkflowStore, WorkflowNode, WorkflowEdge } from '@/store/workflowStore';
+import { findLoopEdges } from '@/lib/graphUtils';
 import { StartNode } from './CustomNodes/StartNode';
 import { EndNode } from './CustomNodes/EndNode';
 import { PhaseNode } from './CustomNodes/PhaseNode';
 import { ApprovalNode } from './CustomNodes/ApprovalNode';
+import { DecisionNode } from './CustomNodes/DecisionNode';
+import { EditableEdge } from './CustomEdges';
 
 const nodeTypes = {
   start: StartNode,
   end: EndNode,
   phase: PhaseNode,
   approval: ApprovalNode,
+  decision: DecisionNode,
+};
+
+const edgeTypes = {
+  default: EditableEdge,
 };
 
 function WorkflowCanvasInner() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const edgeReconnectSuccessful = useRef(true);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const { screenToFlowPosition } = useReactFlow();
 
@@ -37,10 +49,24 @@ function WorkflowCanvasInner() {
     onEdgesChange,
     onConnect,
     setSelectedNodeId,
+    setSelectedEdgeId,
     addPhaseNode,
     addApprovalNode,
+    addDecisionNode,
     deleteNode,
   } = useWorkflowStore();
+
+  // Compute which edges are loops based on graph structure (DFS cycle detection)
+  const edgesWithLoopStatus = useMemo(() => {
+    const loopEdgeIds = findLoopEdges(nodes, edges);
+    return edges.map((edge) => ({
+      ...edge,
+      data: {
+        ...edge.data,
+        isLoop: loopEdgeIds.has(edge.id),
+      },
+    }));
+  }, [nodes, edges]);
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: WorkflowNode) => {
@@ -49,9 +75,44 @@ function WorkflowCanvasInner() {
     [setSelectedNodeId]
   );
 
+  const onEdgeClick = useCallback(
+    (_: React.MouseEvent, edge: Edge) => {
+      setSelectedEdgeId(edge.id);
+    },
+    [setSelectedEdgeId]
+  );
+
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
   }, [setSelectedNodeId]);
+
+  // Edge reconnection handlers for drag-and-drop reassignment
+  const onReconnectStart = useCallback(() => {
+    edgeReconnectSuccessful.current = false;
+  }, []);
+
+  const onReconnect = useCallback(
+    (oldEdge: Edge, newConnection: Connection) => {
+      edgeReconnectSuccessful.current = true;
+      useWorkflowStore.setState({
+        edges: reconnectEdge(oldEdge, newConnection, edges) as WorkflowEdge[],
+      });
+    },
+    [edges]
+  );
+
+  const onReconnectEnd = useCallback(
+    (_: MouseEvent | TouchEvent, edge: Edge) => {
+      if (!edgeReconnectSuccessful.current) {
+        // Edge was dropped in empty space, delete it
+        useWorkflowStore.setState({
+          edges: edges.filter((e) => e.id !== edge.id),
+        });
+      }
+      edgeReconnectSuccessful.current = true;
+    },
+    [edges]
+  );
 
   const handleDragEnter = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -100,17 +161,24 @@ function WorkflowCanvasInner() {
         addPhaseNode(position);
       } else if (type === 'approval') {
         addApprovalNode(position);
+      } else if (type === 'decision') {
+        addDecisionNode(position);
       }
     },
-    [screenToFlowPosition, addPhaseNode, addApprovalNode]
+    [screenToFlowPosition, addPhaseNode, addApprovalNode, addDecisionNode]
   );
 
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
       if (event.key === 'Delete' || event.key === 'Backspace') {
-        const selectedNodeId = useWorkflowStore.getState().selectedNodeId;
+        const { selectedNodeId, selectedEdgeId, edges: currentEdges } = useWorkflowStore.getState();
         if (selectedNodeId && selectedNodeId !== 'start' && selectedNodeId !== 'end') {
           deleteNode(selectedNodeId);
+        } else if (selectedEdgeId) {
+          useWorkflowStore.setState({
+            edges: currentEdges.filter((e) => e.id !== selectedEdgeId),
+            selectedEdgeId: null,
+          });
         }
       }
     },
@@ -130,17 +198,23 @@ function WorkflowCanvasInner() {
     >
       <ReactFlow
         nodes={nodes}
-        edges={edges}
+        edges={edgesWithLoopStatus}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
+        onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
+        onReconnectStart={onReconnectStart}
+        onReconnect={onReconnect}
+        onReconnectEnd={onReconnectEnd}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         snapToGrid
         snapGrid={[15, 15]}
         deleteKeyCode={null}
+        edgesReconnectable
       >
         <Background gap={15} size={1} />
         <Controls />

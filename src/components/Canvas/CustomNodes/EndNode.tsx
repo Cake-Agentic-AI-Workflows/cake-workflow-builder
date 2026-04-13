@@ -14,6 +14,7 @@ function EndNodeComponent({ data }: NodeProps<EndNodeType>) {
       <Handle
         type="target"
         position={Position.Top}
+        id="top"
         className="w-3 h-3 !bg-red-500"
       />
     </div>
