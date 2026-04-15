@@ -8,6 +8,7 @@ import {
   Edge,
 } from '@xyflow/react';
 import { WorkflowEdgeData } from '@/types/workflow';
+import { useWorkflowStore } from '@/store/workflowStore';
 
 type EditableEdgeType = Edge<WorkflowEdgeData>;
 
@@ -23,6 +24,9 @@ export function EditableEdge({
   selected,
 }: EdgeProps<EditableEdgeType>) {
   const { setEdges, getZoom } = useReactFlow();
+
+  const highlightedEdgeId = useWorkflowStore((state) => state.highlightedEdgeId);
+  const isHighlighted = highlightedEdgeId === id;
 
   // Get offset from edge data or default to center
   const offsetX = data?.offsetX ?? 0;
@@ -97,23 +101,37 @@ export function EditableEdge({
 
   return (
     <>
-      <BaseEdge
-        path={customPath}
-        markerEnd={markerEnd}
-        style={{
-          ...style,
-          strokeWidth: selected ? 3 : 2,
-          stroke: isLoop ? '#f59e0b' : (style.stroke || '#64748b'),
-        }}
-      />
-      {/* Invisible wider path for easier selection */}
-      <path
-        d={customPath}
-        fill="none"
-        strokeWidth={20}
-        stroke="transparent"
-        className="cursor-pointer"
-      />
+      <style>
+        {`
+          @keyframes edge-reject {
+            0%, 100% { stroke: inherit; }
+            25%, 75% { stroke: #ef4444; }
+            50% { stroke: #dc2626; }
+          }
+          .edge-highlight path {
+            animation: edge-reject 400ms ease-in-out;
+          }
+        `}
+      </style>
+      <g className={isHighlighted ? 'edge-highlight' : ''}>
+        <BaseEdge
+          path={customPath}
+          markerEnd={markerEnd}
+          style={{
+            ...style,
+            strokeWidth: selected ? 3 : 2,
+            stroke: isLoop ? '#f59e0b' : (style.stroke || '#64748b'),
+          }}
+        />
+        {/* Invisible wider path for easier selection */}
+        <path
+          d={customPath}
+          fill="none"
+          strokeWidth={20}
+          stroke="transparent"
+          className="cursor-pointer"
+        />
+      </g>
       {/* Draggable midpoint handle - positioned at actual curve midpoint */}
       <g
         transform={`translate(${curveMidX}, ${curveMidY})`}
