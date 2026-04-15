@@ -77,7 +77,7 @@ export function DirectionalIndicators({ node, onOpenRadialMenu, isHovered }: Dir
   );
 
   const getIndicatorPosition = (direction: Direction) => {
-    const offset = 24;
+    const offset = 32; // Increased from 24 to prevent overlap with edge handles
     switch (direction) {
       case 'up':
         return { top: -offset, left: '50%', transform: 'translateX(-50%)' };
