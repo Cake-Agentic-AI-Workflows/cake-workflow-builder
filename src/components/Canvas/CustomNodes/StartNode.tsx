@@ -15,7 +15,7 @@ function StartNodeComponent({ data }: NodeProps<StartNodeType>) {
         type="source"
         position={Position.Bottom}
         id="bottom"
-        className="w-3 h-3 !bg-green-500"
+        className="w-4 h-4 !bg-green-500 hover:!bg-primary hover:scale-150 transition-transform"
       />
     </div>
   );

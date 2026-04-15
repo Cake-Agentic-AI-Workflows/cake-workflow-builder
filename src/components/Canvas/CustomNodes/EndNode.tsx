@@ -15,7 +15,7 @@ function EndNodeComponent({ data }: NodeProps<EndNodeType>) {
         type="target"
         position={Position.Top}
         id="top"
-        className="w-3 h-3 !bg-red-500"
+        className="w-4 h-4 !bg-red-500 hover:!bg-primary hover:scale-150 transition-transform"
       />
     </div>
   );
