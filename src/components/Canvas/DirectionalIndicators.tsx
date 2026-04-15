@@ -51,7 +51,14 @@ export function DirectionalIndicators({ node, onOpenRadialMenu, isHovered }: Dir
       }
 
       const allNodes = getNodes() as WorkflowNode[];
-      const targetNode = findNearestNodeInDirection(node, allNodes, direction);
+
+      // Find the actual source node with position data from React Flow
+      const sourceNode = allNodes.find(n => n.id === node.id);
+      if (!sourceNode) {
+        return;
+      }
+
+      const targetNode = findNearestNodeInDirection(sourceNode, allNodes, direction);
 
       if (targetNode) {
         // Connect to existing node
@@ -66,7 +73,7 @@ export function DirectionalIndicators({ node, onOpenRadialMenu, isHovered }: Dir
         onOpenRadialMenu(direction, { x: event.clientX, y: event.clientY });
       }
     },
-    [node, getNodes, onConnect, isHandleConnected, onOpenRadialMenu]
+    [node.id, getNodes, onConnect, isHandleConnected, onOpenRadialMenu]
   );
 
   const getIndicatorPosition = (direction: Direction) => {
