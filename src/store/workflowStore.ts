@@ -123,6 +123,14 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   },
 
   onConnect: (connection: Connection) => {
+    const { source, target } = connection;
+
+    // Check for duplicate edge
+    if (source && target && get().hasEdgeBetween(source, target)) {
+      get().highlightDuplicateEdge(source, target);
+      return;
+    }
+
     set({
       edges: addEdge(
         {

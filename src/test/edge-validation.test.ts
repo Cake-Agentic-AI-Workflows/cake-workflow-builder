@@ -49,3 +49,93 @@ describe('Edge Validation: hasEdgeBetween', () => {
     expect(store.hasEdgeBetween('node-c', 'node-d')).toBe(false);
   });
 });
+
+describe('Edge Validation: onConnect duplicate prevention', () => {
+  it('should create edge when no duplicate exists', () => {
+    useWorkflowStore.getState().onConnect({
+      source: 'start',
+      target: 'end',
+      sourceHandle: 'bottom',
+      targetHandle: 'top',
+    });
+
+    const { edges } = useWorkflowStore.getState();
+    expect(edges.length).toBe(1);
+    expect(edges[0].source).toBe('start');
+    expect(edges[0].target).toBe('end');
+  });
+
+  it('should NOT create duplicate edge between same source and target', () => {
+    // Create first edge
+    useWorkflowStore.getState().onConnect({
+      source: 'start',
+      target: 'end',
+      sourceHandle: 'bottom',
+      targetHandle: 'top',
+    });
+
+    expect(useWorkflowStore.getState().edges.length).toBe(1);
+
+    // Attempt duplicate
+    useWorkflowStore.getState().onConnect({
+      source: 'start',
+      target: 'end',
+      sourceHandle: 'bottom',
+      targetHandle: 'top',
+    });
+
+    // Should still be 1 edge
+    expect(useWorkflowStore.getState().edges.length).toBe(1);
+  });
+
+  it('should allow edge in reverse direction', () => {
+    // Add phase nodes first
+    useWorkflowStore.getState().addPhaseNode({ x: 100, y: 100 });
+    useWorkflowStore.getState().addPhaseNode({ x: 100, y: 250 });
+
+    const nodeIds = useWorkflowStore.getState().nodes
+      .filter(n => n.type === 'phase')
+      .map(n => n.id);
+
+    // Create A->B
+    useWorkflowStore.getState().onConnect({
+      source: nodeIds[0],
+      target: nodeIds[1],
+      sourceHandle: 'bottom',
+      targetHandle: 'top',
+    });
+
+    // Create B->A (reverse direction - should work)
+    useWorkflowStore.getState().onConnect({
+      source: nodeIds[1],
+      target: nodeIds[0],
+      sourceHandle: 'top',
+      targetHandle: 'bottom',
+    });
+
+    expect(useWorkflowStore.getState().edges.length).toBe(2);
+  });
+
+  it('should set highlightedEdgeId when duplicate is blocked', () => {
+    // Create first edge
+    useWorkflowStore.getState().onConnect({
+      source: 'start',
+      target: 'end',
+      sourceHandle: 'bottom',
+      targetHandle: 'top',
+    });
+
+    const edgeId = useWorkflowStore.getState().edges[0].id;
+
+    // Attempt duplicate
+    useWorkflowStore.getState().onConnect({
+      source: 'start',
+      target: 'end',
+      sourceHandle: 'bottom',
+      targetHandle: 'top',
+    });
+
+    // Should highlight the existing edge
+    expect(useWorkflowStore.getState().highlightedEdgeId).toBe(edgeId);
+  });
+});
