@@ -34,6 +34,19 @@ function withDirectionalIndicators<T extends NodeProps>(
 ) {
   return memo(function NodeWithIndicators(props: T) {
     const { openRadialMenu } = useWorkflowStore();
+    const [isHovered, setIsHovered] = useState(false);
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const handleMouseEnter = useCallback(() => {
+      hoverTimeoutRef.current = setTimeout(() => setIsHovered(true), 150);
+    }, []);
+
+    const handleMouseLeave = useCallback(() => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      setIsHovered(false);
+    }, []);
 
     const handleOpenRadialMenu = useCallback(
       (direction: Direction, position: { x: number; y: number }) => {
@@ -43,11 +56,16 @@ function withDirectionalIndicators<T extends NodeProps>(
     );
 
     return (
-      <div className="relative">
+      <div
+        className="relative"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
         <WrappedComponent {...props} />
         <DirectionalIndicators
           node={props as unknown as WorkflowNode}
           onOpenRadialMenu={handleOpenRadialMenu}
+          isHovered={isHovered}
         />
       </div>
     );
