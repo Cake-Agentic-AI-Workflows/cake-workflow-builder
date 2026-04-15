@@ -42,6 +42,7 @@ interface WorkflowState {
   metadata: WorkflowMetadata;
   selectedNodeId: string | null;
   selectedEdgeId: string | null;
+  highlightedEdgeId: string | null;
   radialMenu: {
     isOpen: boolean;
     position: { x: number; y: number };
@@ -68,6 +69,8 @@ interface WorkflowState {
   addStartNode: (position: { x: number; y: number }) => string;
   addEndNode: (position: { x: number; y: number }) => string;
   addNodeByType: (type: NodeType, position: { x: number; y: number }) => string;
+  hasEdgeBetween: (source: string, target: string) => boolean;
+  highlightDuplicateEdge: (source: string, target: string) => void;
 }
 
 // Initial nodes for a new workflow
@@ -99,6 +102,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   metadata: { ...defaultWorkflowMetadata },
   selectedNodeId: null,
   selectedEdgeId: null,
+  highlightedEdgeId: null,
   radialMenu: {
     isOpen: false,
     position: { x: 0, y: 0 },
@@ -255,6 +259,24 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         direction: null,
       },
     });
+  },
+
+  hasEdgeBetween: (source: string, target: string) => {
+    return get().edges.some(
+      (edge) => edge.source === source && edge.target === target
+    );
+  },
+
+  highlightDuplicateEdge: (source: string, target: string) => {
+    const existingEdge = get().edges.find(
+      (edge) => edge.source === source && edge.target === target
+    );
+    if (existingEdge) {
+      set({ highlightedEdgeId: existingEdge.id });
+      setTimeout(() => {
+        set({ highlightedEdgeId: null });
+      }, 400);
+    }
   },
 
   addStartNode: (position) => {
