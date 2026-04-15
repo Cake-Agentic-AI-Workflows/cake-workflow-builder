@@ -141,6 +141,27 @@ function WorkflowCanvasInner({ onClearClick }: { onClearClick: () => void }) {
 
   const onReconnect = useCallback(
     (oldEdge: Edge, newConnection: Connection) => {
+      // Skip if no actual change
+      if (
+        oldEdge.source === newConnection.source &&
+        oldEdge.target === newConnection.target
+      ) {
+        edgeReconnectSuccessful.current = true;
+        return;
+      }
+
+      // Check for duplicate (the edge being moved doesn't count)
+      const { hasEdgeBetween, highlightDuplicateEdge } = useWorkflowStore.getState();
+      if (
+        newConnection.source &&
+        newConnection.target &&
+        hasEdgeBetween(newConnection.source, newConnection.target)
+      ) {
+        highlightDuplicateEdge(newConnection.source, newConnection.target);
+        edgeReconnectSuccessful.current = true; // Prevent edge deletion
+        return;
+      }
+
       edgeReconnectSuccessful.current = true;
       useWorkflowStore.setState({
         edges: reconnectEdge(oldEdge, newConnection, edges) as WorkflowEdge[],

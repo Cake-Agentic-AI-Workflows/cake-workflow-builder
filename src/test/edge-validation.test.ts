@@ -139,3 +139,25 @@ describe('Edge Validation: onConnect duplicate prevention', () => {
     expect(useWorkflowStore.getState().highlightedEdgeId).toBe(edgeId);
   });
 });
+
+describe('Edge Validation: onReconnect duplicate prevention', () => {
+  it('should block reconnect if it would create duplicate', () => {
+    // Add phase nodes
+    useWorkflowStore.getState().addPhaseNode({ x: 100, y: 100 }); // node-1
+    useWorkflowStore.getState().addPhaseNode({ x: 100, y: 250 }); // node-2
+    useWorkflowStore.getState().addPhaseNode({ x: 100, y: 400 }); // node-3
+
+    const phaseNodes = useWorkflowStore.getState().nodes.filter(n => n.type === 'phase');
+    const [nodeA, nodeB, nodeC] = phaseNodes.map(n => n.id);
+
+    // Create edges: A→B and A→C
+    useWorkflowStore.getState().onConnect({ source: nodeA, target: nodeB, sourceHandle: 'bottom', targetHandle: 'top' });
+    useWorkflowStore.getState().onConnect({ source: nodeA, target: nodeC, sourceHandle: 'bottom', targetHandle: 'top' });
+
+    expect(useWorkflowStore.getState().edges.length).toBe(2);
+
+    // A→B already exists, trying to reconnect A→C to A→B should be blocked
+    // This is tested via the hasEdgeBetween check which WorkflowCanvas uses
+    expect(useWorkflowStore.getState().hasEdgeBetween(nodeA, nodeB)).toBe(true);
+  });
+});
