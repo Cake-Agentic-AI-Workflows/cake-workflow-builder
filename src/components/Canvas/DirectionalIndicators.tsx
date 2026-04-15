@@ -12,6 +12,8 @@ interface DirectionalIndicatorsProps {
   node: WorkflowNode;
   onOpenRadialMenu: (direction: Direction, position: { x: number; y: number }) => void;
   isHovered: boolean;
+  onIndicatorMouseEnter?: () => void;
+  onIndicatorMouseLeave?: () => void;
 }
 
 const directionIcons = {
@@ -21,7 +23,7 @@ const directionIcons = {
   right: ChevronRight,
 };
 
-export function DirectionalIndicators({ node, onOpenRadialMenu, isHovered }: DirectionalIndicatorsProps) {
+export function DirectionalIndicators({ node, onOpenRadialMenu, isHovered, onIndicatorMouseEnter, onIndicatorMouseLeave }: DirectionalIndicatorsProps) {
   const { getNodes } = useReactFlow();
   const { edges, onConnect } = useWorkflowStore();
 
@@ -132,6 +134,8 @@ export function DirectionalIndicators({ node, onOpenRadialMenu, isHovered }: Dir
             )}
             style={position}
             onClick={(e) => handleIndicatorClick(direction, e)}
+            onMouseEnter={onIndicatorMouseEnter}
+            onMouseLeave={onIndicatorMouseLeave}
           >
             <Icon className="w-4 h-4" />
           </button>

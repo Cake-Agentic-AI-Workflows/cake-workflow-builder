@@ -101,26 +101,15 @@ export function EditableEdge({
 
   return (
     <>
-      <style>
-        {`
-          @keyframes edge-reject {
-            0%, 100% { stroke: inherit; }
-            25%, 75% { stroke: #ef4444; }
-            50% { stroke: #dc2626; }
-          }
-          .edge-highlight path {
-            animation: edge-reject 400ms ease-in-out;
-          }
-        `}
-      </style>
-      <g className={isHighlighted ? 'edge-highlight' : ''}>
+      <g>
         <BaseEdge
           path={customPath}
           markerEnd={markerEnd}
           style={{
             ...style,
             strokeWidth: selected ? 3 : 2,
-            stroke: isLoop ? '#f59e0b' : (style.stroke || '#64748b'),
+            stroke: isHighlighted ? '#ef4444' : (isLoop ? '#f59e0b' : (style.stroke || '#64748b')),
+            transition: isHighlighted ? 'none' : 'stroke 0.2s ease-out',
           }}
         />
         {/* Invisible wider path for easier selection */}
