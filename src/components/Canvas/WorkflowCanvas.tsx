@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState, useMemo, DragEvent } from 'react';
+import { useCallback, useRef, useState, useMemo, DragEvent, memo, ComponentType } from 'react';
 import {
   ReactFlow,
   Background,
@@ -12,6 +12,7 @@ import {
   Edge,
   reconnectEdge,
   Connection,
+  NodeProps,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -24,13 +25,41 @@ import { ApprovalNode } from './CustomNodes/ApprovalNode';
 import { DecisionNode } from './CustomNodes/DecisionNode';
 import { ClearButton } from './ClearButton';
 import { EditableEdge } from './CustomEdges';
+import { DirectionalIndicators } from './DirectionalIndicators';
+import { RadialNodePicker } from './RadialNodePicker';
+import { Direction } from '@/types/workflow';
+
+function withDirectionalIndicators<T extends NodeProps>(
+  WrappedComponent: ComponentType<T>
+) {
+  return memo(function NodeWithIndicators(props: T) {
+    const { openRadialMenu } = useWorkflowStore();
+
+    const handleOpenRadialMenu = useCallback(
+      (direction: Direction, position: { x: number; y: number }) => {
+        openRadialMenu(props.id, direction, position);
+      },
+      [props.id, openRadialMenu]
+    );
+
+    return (
+      <div className="relative">
+        <WrappedComponent {...props} />
+        <DirectionalIndicators
+          node={props as unknown as WorkflowNode}
+          onOpenRadialMenu={handleOpenRadialMenu}
+        />
+      </div>
+    );
+  });
+}
 
 const nodeTypes = {
-  start: StartNode,
-  end: EndNode,
-  phase: PhaseNode,
-  approval: ApprovalNode,
-  decision: DecisionNode,
+  start: withDirectionalIndicators(StartNode),
+  end: withDirectionalIndicators(EndNode),
+  phase: withDirectionalIndicators(PhaseNode),
+  approval: withDirectionalIndicators(ApprovalNode),
+  decision: withDirectionalIndicators(DecisionNode),
 };
 
 const edgeTypes = {
@@ -242,6 +271,9 @@ function WorkflowCanvasInner({ onClearClick }: { onClearClick: () => void }) {
           </span>
         </div>
       )}
+
+      {/* Radial menu for node spawning */}
+      <RadialNodePicker />
     </div>
   );
 }
