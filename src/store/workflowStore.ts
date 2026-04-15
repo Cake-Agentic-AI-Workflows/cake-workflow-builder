@@ -22,6 +22,8 @@ import {
   defaultApprovalNodeData,
   defaultDecisionNodeData,
   defaultEdgeData,
+  Direction,
+  NodeType,
 } from '@/types/workflow';
 
 // Custom node types for React Flow
@@ -40,6 +42,12 @@ interface WorkflowState {
   metadata: WorkflowMetadata;
   selectedNodeId: string | null;
   selectedEdgeId: string | null;
+  radialMenu: {
+    isOpen: boolean;
+    position: { x: number; y: number };
+    sourceNodeId: string | null;
+    direction: Direction | null;
+  };
 
   onNodesChange: OnNodesChange<WorkflowNode>;
   onEdgesChange: OnEdgesChange;
@@ -55,6 +63,11 @@ interface WorkflowState {
   deleteNode: (nodeId: string) => void;
   resetWorkflow: () => void;
   loadWorkflow: (nodes: WorkflowNode[], edges: WorkflowEdge[], metadata: WorkflowMetadata) => void;
+  openRadialMenu: (sourceNodeId: string, direction: Direction, position: { x: number; y: number }) => void;
+  closeRadialMenu: () => void;
+  addStartNode: (position: { x: number; y: number }) => string;
+  addEndNode: (position: { x: number; y: number }) => string;
+  addNodeByType: (type: NodeType, position: { x: number; y: number }) => string;
 }
 
 // Initial nodes for a new workflow
@@ -86,6 +99,12 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   metadata: { ...defaultWorkflowMetadata },
   selectedNodeId: null,
   selectedEdgeId: null,
+  radialMenu: {
+    isOpen: false,
+    position: { x: 0, y: 0 },
+    sourceNodeId: null,
+    direction: null,
+  },
 
   onNodesChange: (changes) => {
     set({
@@ -214,6 +233,75 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       // Reset metadata to defaults if no content nodes remain
       ...(hasContentNodes ? {} : { metadata: { ...defaultWorkflowMetadata } }),
     });
+  },
+
+  openRadialMenu: (sourceNodeId, direction, position) => {
+    set({
+      radialMenu: {
+        isOpen: true,
+        position,
+        sourceNodeId,
+        direction,
+      },
+    });
+  },
+
+  closeRadialMenu: () => {
+    set({
+      radialMenu: {
+        isOpen: false,
+        position: { x: 0, y: 0 },
+        sourceNodeId: null,
+        direction: null,
+      },
+    });
+  },
+
+  addStartNode: (position) => {
+    const id = generateNodeId();
+    const newNode: StartNode = {
+      id,
+      type: 'start',
+      position,
+      data: { id, label: 'Start' },
+    };
+    set({
+      nodes: [...get().nodes, newNode],
+      selectedNodeId: id,
+    });
+    return id;
+  },
+
+  addEndNode: (position) => {
+    const id = generateNodeId();
+    const newNode: EndNode = {
+      id,
+      type: 'end',
+      position,
+      data: { id, label: 'End' },
+    };
+    set({
+      nodes: [...get().nodes, newNode],
+      selectedNodeId: id,
+    });
+    return id;
+  },
+
+  addNodeByType: (type, position) => {
+    switch (type) {
+      case 'start':
+        return get().addStartNode(position);
+      case 'end':
+        return get().addEndNode(position);
+      case 'phase':
+        return get().addPhaseNode(position);
+      case 'approval':
+        return get().addApprovalNode(position);
+      case 'decision':
+        return get().addDecisionNode(position);
+      default:
+        return get().addPhaseNode(position);
+    }
   },
 
   resetWorkflow: () => {

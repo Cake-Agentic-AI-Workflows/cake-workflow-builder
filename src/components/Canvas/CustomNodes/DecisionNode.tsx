@@ -23,19 +23,19 @@ function DecisionNodeComponent({ data, selected }: NodeProps<DecisionNodeType>) 
         type="target"
         position={Position.Top}
         id="top"
-        className="w-3 h-3 !bg-gray-500 hover:!bg-primary hover:scale-150 transition-transform"
+        className="w-4 h-4 !bg-gray-500 hover:!bg-primary hover:scale-150 transition-transform"
       />
       <Handle
         type="target"
         position={Position.Left}
         id="left"
-        className="w-3 h-3 !bg-gray-500 hover:!bg-primary hover:scale-150 transition-transform"
+        className="w-4 h-4 !bg-gray-500 hover:!bg-primary hover:scale-150 transition-transform"
       />
       <Handle
         type="target"
         position={Position.Right}
         id="right"
-        className="w-3 h-3 !bg-gray-500 hover:!bg-primary hover:scale-150 transition-transform"
+        className="w-4 h-4 !bg-gray-500 hover:!bg-primary hover:scale-150 transition-transform"
       />
 
       {/* Diamond shape using CSS transform */}
@@ -72,7 +72,7 @@ function DecisionNodeComponent({ data, selected }: NodeProps<DecisionNodeType>) 
             type="source"
             position={Position.Bottom}
             id={branch.id}
-            className="w-3 h-3 !bg-amber-500 hover:!bg-primary hover:scale-125 transition-transform"
+            className="w-4 h-4 !bg-amber-500 hover:!bg-primary hover:scale-125 transition-transform"
             style={{
               left: `${pos}%`,
               bottom: '-6px',

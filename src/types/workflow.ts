@@ -4,6 +4,7 @@ export type AgentType = 'Explore' | 'Plan' | 'general-purpose' | 'none';
 export type ModelType = 'opus' | 'sonnet' | 'haiku';
 export type ExecutionMode = 'parallel' | 'sequential';
 export type NodeType = 'start' | 'phase' | 'approval' | 'decision' | 'end';
+export type Direction = 'up' | 'down' | 'left' | 'right';
 
 export interface AgentConfig {
   type: AgentType;
