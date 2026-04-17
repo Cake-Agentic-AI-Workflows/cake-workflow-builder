@@ -36,6 +36,7 @@ function withDirectionalIndicators<T extends NodeProps>(
     const { openRadialMenu } = useWorkflowStore();
     const [isHovered, setIsHovered] = useState(false);
     const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isOverIndicatorRef = useRef(false);
 
     const handleMouseEnter = useCallback(() => {
       hoverTimeoutRef.current = setTimeout(() => setIsHovered(true), 150);
@@ -45,6 +46,20 @@ function withDirectionalIndicators<T extends NodeProps>(
       if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current);
       }
+      // Delay clearing hover to allow mouse to reach indicators
+      setTimeout(() => {
+        if (!isOverIndicatorRef.current) {
+          setIsHovered(false);
+        }
+      }, 50);
+    }, []);
+
+    const handleIndicatorMouseEnter = useCallback(() => {
+      isOverIndicatorRef.current = true;
+    }, []);
+
+    const handleIndicatorMouseLeave = useCallback(() => {
+      isOverIndicatorRef.current = false;
       setIsHovered(false);
     }, []);
 
@@ -66,6 +81,8 @@ function withDirectionalIndicators<T extends NodeProps>(
           node={props as unknown as WorkflowNode}
           onOpenRadialMenu={handleOpenRadialMenu}
           isHovered={isHovered}
+          onIndicatorMouseEnter={handleIndicatorMouseEnter}
+          onIndicatorMouseLeave={handleIndicatorMouseLeave}
         />
       </div>
     );
@@ -141,6 +158,27 @@ function WorkflowCanvasInner({ onClearClick }: { onClearClick: () => void }) {
 
   const onReconnect = useCallback(
     (oldEdge: Edge, newConnection: Connection) => {
+      // Skip if no actual change
+      if (
+        oldEdge.source === newConnection.source &&
+        oldEdge.target === newConnection.target
+      ) {
+        edgeReconnectSuccessful.current = true;
+        return;
+      }
+
+      // Check for duplicate (the edge being moved doesn't count)
+      const { hasEdgeBetween, highlightDuplicateEdge } = useWorkflowStore.getState();
+      if (
+        newConnection.source &&
+        newConnection.target &&
+        hasEdgeBetween(newConnection.source, newConnection.target)
+      ) {
+        highlightDuplicateEdge(newConnection.source, newConnection.target);
+        edgeReconnectSuccessful.current = true; // Prevent edge deletion
+        return;
+      }
+
       edgeReconnectSuccessful.current = true;
       useWorkflowStore.setState({
         edges: reconnectEdge(oldEdge, newConnection, edges) as WorkflowEdge[],

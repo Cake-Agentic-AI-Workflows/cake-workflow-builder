@@ -12,6 +12,8 @@ interface DirectionalIndicatorsProps {
   node: WorkflowNode;
   onOpenRadialMenu: (direction: Direction, position: { x: number; y: number }) => void;
   isHovered: boolean;
+  onIndicatorMouseEnter?: () => void;
+  onIndicatorMouseLeave?: () => void;
 }
 
 const directionIcons = {
@@ -21,7 +23,7 @@ const directionIcons = {
   right: ChevronRight,
 };
 
-export function DirectionalIndicators({ node, onOpenRadialMenu, isHovered }: DirectionalIndicatorsProps) {
+export function DirectionalIndicators({ node, onOpenRadialMenu, isHovered, onIndicatorMouseEnter, onIndicatorMouseLeave }: DirectionalIndicatorsProps) {
   const { getNodes } = useReactFlow();
   const { edges, onConnect } = useWorkflowStore();
 
@@ -77,7 +79,7 @@ export function DirectionalIndicators({ node, onOpenRadialMenu, isHovered }: Dir
   );
 
   const getIndicatorPosition = (direction: Direction) => {
-    const offset = 24;
+    const offset = 32; // Increased from 24 to prevent overlap with edge handles
     switch (direction) {
       case 'up':
         return { top: -offset, left: '50%', transform: 'translateX(-50%)' };
@@ -132,6 +134,8 @@ export function DirectionalIndicators({ node, onOpenRadialMenu, isHovered }: Dir
             )}
             style={position}
             onClick={(e) => handleIndicatorClick(direction, e)}
+            onMouseEnter={onIndicatorMouseEnter}
+            onMouseLeave={onIndicatorMouseLeave}
           >
             <Icon className="w-4 h-4" />
           </button>
