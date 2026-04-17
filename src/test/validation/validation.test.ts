@@ -47,7 +47,7 @@ ${content}`;
   });
 
   // Helper to create a basic connected workflow
-  const createBasicWorkflow = () => {
+  const createBasicWorkflow = (): { nodes: WorkflowNode[]; edges: WorkflowEdge[] } => {
     const startNode: WorkflowNode = {
       id: 'start',
       type: 'start',
@@ -570,7 +570,7 @@ Go back to Research, up to 7 times.
           label: 'Single Option Approval',
           options: [{ label: 'Yes', description: 'Only option' }],
         },
-      };
+      } as WorkflowNode;
 
       const workflow = createWorkflow(nodes, edges, { name: 'test', author: 'test' });
       const warnings = validateWorkflow(workflow);
@@ -592,7 +592,7 @@ Go back to Research, up to 7 times.
           label: 'Single Branch Decision',
           branches: [{ id: 'branch-1', label: 'Only Option', condition: 'Always true' }],
         },
-      };
+      } as WorkflowNode;
 
       const workflow = createWorkflow(nodes, edges, { name: 'test', author: 'test' });
       const warnings = validateWorkflow(workflow);
@@ -620,7 +620,7 @@ Go back to Research, up to 7 times.
             { id: 'branch-5', label: 'E', condition: 'Condition E' },
           ],
         },
-      };
+      } as WorkflowNode;
 
       const workflow = createWorkflow(nodes, edges, { name: 'test', author: 'test' });
       const warnings = validateWorkflow(workflow);
