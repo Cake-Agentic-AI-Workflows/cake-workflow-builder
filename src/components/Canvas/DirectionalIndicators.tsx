@@ -27,11 +27,6 @@ export function DirectionalIndicators({ node, onOpenRadialMenu, isHovered, onInd
   const { getNodes } = useReactFlow();
   const { edges, onConnect } = useWorkflowStore();
 
-  // Don't show indicators on EndNode (can't initiate connections)
-  if (node.type === 'end') {
-    return null;
-  }
-
   const isHandleConnected = useCallback(
     (handleId: string): boolean => {
       return edges.some(
@@ -77,6 +72,11 @@ export function DirectionalIndicators({ node, onOpenRadialMenu, isHovered, onInd
     },
     [node.id, getNodes, onConnect, isHandleConnected, onOpenRadialMenu]
   );
+
+  // Don't show indicators on EndNode (can't initiate connections)
+  if (node.type === 'end') {
+    return null;
+  }
 
   const getIndicatorPosition = (direction: Direction) => {
     const offset = 32; // Increased from 24 to prevent overlap with edge handles
