@@ -68,7 +68,7 @@ jobs:
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Node version | 18 | Matches Next.js 14 requirements, widely supported |
+| Node version | 20 | Required by vitest, jsdom, vite dependencies |
 | Single job vs matrix | Single job | Simpler, tests only need Node 18 |
 | Dependency install | `npm ci` | Deterministic, respects lock file exactly |
 | Dependency caching | npm cache keyed on `package-lock.json` | Faster CI runs, consistent |
